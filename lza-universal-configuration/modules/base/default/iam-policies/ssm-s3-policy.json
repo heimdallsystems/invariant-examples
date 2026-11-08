@@ -8,7 +8,6 @@
         "arn:${PARTITION}:s3:::aws-ssm-${REGION}/*",
         "arn:${PARTITION}:s3:::aws-windows-downloads-${REGION}/*",
         "arn:${PARTITION}:s3:::amazon-ssm-${REGION}/*",
-        "arn:${PARTITION}:s3:::aws-ssm-${REGION}/*",
         "arn:${PARTITION}:s3:::amazon-ssm-packages-${REGION}/*",
         "arn:${PARTITION}:s3:::${REGION}-birdwatcher-prod/*",
         "arn:${PARTITION}:s3:::aws-ssm-distributor-file-${REGION}/*",
