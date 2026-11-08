@@ -1,0 +1,11 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DeployArtifacts",
+      "Effect": "Allow",
+      "Action": ["s3:PutObject", "iam:PassRole"],
+      "Resource": "*"
+    }
+  ]
+}
