@@ -6,7 +6,6 @@
       "Effect": "Deny",
       "Action": [
         "config:PutConfigRule",
-        "config:DeleteConfigRule",
         "config:DeleteEvaluationResults",
         "config:UntagResource"
       ],
