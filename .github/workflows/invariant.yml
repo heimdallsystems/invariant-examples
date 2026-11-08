@@ -28,10 +28,8 @@ permissions:
   actions: read
 
 env:
-  # Pinned so the recorded runs are reproducible. Temporarily the commit of
-  # heimdallsystems/invariant PR #4 (SARIF line regions), unreleased, to test
-  # GitHub's code scanning PR check; back to a PyPI release once one ships.
-  INVARIANT_PIP_SPEC: "invariant-sast @ git+https://github.com/heimdallsystems/invariant@735e50725227f73f3e475fd862b6725c62e74566"
+  # Pinned so the recorded runs are reproducible.
+  INVARIANT_PIP_SPEC: invariant-sast==0.3.5
   POLICY_ROOT: lza-universal-configuration/modules/base/default
   SOLVER_TIMEOUT_SECONDS: "120"   # limits each whole invariant command
   FORCE_COLOR: "1"
