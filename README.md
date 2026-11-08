@@ -15,8 +15,13 @@ request and every push to `main`:
 
 | Job | What it checks | How it gates |
 | --- | --- | --- |
-| `guardrail-baseline` | Every SCP and RCP against the LZA guardrails bundled with Invariant, and every IAM policy for privilege-escalation actions | Reports to code scanning. A pull request that adds a new error-level alert fails the **Code scanning results** check |
+| `guardrail-baseline` | Every SCP and RCP against the LZA guardrails bundled with Invariant, and every IAM policy for privilege-escalation actions | Reports to code scanning. On a pull request it also scans the base branch and fails if the pull request adds a failed check |
 | `guardrail-regression` | Each changed policy against its reviewed copy in [`reference/`](reference/): SCPs and RCPs must still deny everything they denied, and IAM policies must grant nothing new | Fails the job on any failed check |
+
+Why not use GitHub's own code scanning check to gate? Invariant's SARIF names
+the policy file but gives no line region, so GitHub can't match an alert to
+the lines a pull request changed, and its check reports no new alerts even
+when there are. The baseline job compares findings itself instead.
 
 ### Findings on `main`
 
@@ -42,8 +47,8 @@ Each example is an open pull request, so you can see the real checks:
   the `GRCFGR` guardrail. Expected: the regression job fails with a
   counterexample naming that action.
 - **Add a CI deploy role policy**: a new IAM policy granting `iam:PassRole`
-  on every resource. Expected: a new `INV_AWS_003` alert fails the code
-  scanning check.
+  on every resource. Expected: the baseline job fails on a new `INV_AWS_003`
+  finding for `iam:PassRole`.
 - **Remove a duplicate S3 resource**: removes a repeated ARN from
   `ssm-s3-policy.json`. Expected: both jobs pass.
 

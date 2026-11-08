@@ -4,10 +4,13 @@
 # (.github/workflows/invariant.yml) for a config that already has findings:
 #
 #   guardrail-baseline    Scans every policy against the LZA guardrails bundled
-#                         with Invariant. Reports to code scanning and does not
-#                         fail the job, so existing findings stay visible as
-#                         alerts. A pull request that adds a new error-level
-#                         alert fails GitHub's "Code scanning results" check.
+#                         with Invariant and reports to code scanning, so
+#                         existing findings stay visible as alerts. On a pull
+#                         request it also scans the base branch and fails if
+#                         the pull request adds a failed check. GitHub's own
+#                         code scanning check can't do that here: Invariant's
+#                         SARIF has no line region, so GitHub can't match an
+#                         alert to changed lines and never fails the check.
 #   guardrail-regression  Proves each changed policy still denies (SCP/RCP) or
 #                         grants no more than (IAM) its reviewed copy in
 #                         reference/. Fails the job on any failed check.
@@ -37,6 +40,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the new-findings gate scans the base branch too
 
       - uses: actions/setup-python@v5
         with:
@@ -60,6 +65,47 @@ jobs:
             --output cli --output sarif --output json \
             --out-dir solver-results-baseline \
             --soft-fail
+
+      - name: Scan the base branch
+        if: github.event_name == 'pull_request'
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/base" "origin/$GITHUB_BASE_REF"
+          timeout "$SOLVER_TIMEOUT_SECONDS" invariant scan \
+            --directory "$RUNNER_TEMP/base/$POLICY_ROOT" \
+            --output json \
+            --out-dir "$RUNNER_TEMP/base-results" \
+            --soft-fail > /dev/null
+
+      - name: Fail on findings this pull request adds
+        if: github.event_name == 'pull_request'
+        run: |
+          python - <<'EOF'
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          def failed(path, root):
+              """Failed checks as (check, path relative to the policy root)."""
+              found = set()
+              for result in json.loads(Path(path).read_text()):
+                  if isinstance(result, dict) and not result["passed"]:
+                      file = Path(result["file_path"]).resolve().relative_to(Path(root).resolve())
+                      found.add((result["check_id"], file.as_posix()))
+              return found
+
+          root = os.environ["POLICY_ROOT"]
+          head = failed("solver-results-baseline/results.json", root)
+          base = failed(os.path.join(os.environ["RUNNER_TEMP"], "base-results", "results.json"),
+                        os.path.join(os.environ["RUNNER_TEMP"], "base", root))
+          for check, file in sorted(base - head):
+              print(f"FIXED {check} {file}")
+          new = sorted(head - base)
+          for check, file in new:
+              print(f"NEW   {check} {file}")
+          print(f"{len(new)} new failed check(s), {len(head & base)} already on the base branch")
+          sys.exit(1 if new else 0)
+          EOF
 
       - name: Upload SARIF to code scanning
         if: always()
