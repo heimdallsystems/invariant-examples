@@ -1,0 +1,14 @@
+invariant-examples
+Copyright 2026 Heimdall Systems Ltd
+
+This repository contains a copy of LZA Universal Configuration v1.4.0
+(https://github.com/aws/lza-universal-configuration, commit
+96aa5e73c5b4f574985a71b195796206cad060ce) in lza-universal-configuration/,
+and copies of its policy files in reference/. Those files are
+Copyright Amazon.com, Inc. or its affiliates, licensed under the Apache
+License, Version 2.0. Its NOTICE.txt is kept in lza-universal-configuration/.
+
+Files changed in this repository's example pull requests are modified from
+that release; the pull requests show each change.
+
+Heimdall Systems is not affiliated with or endorsed by Amazon Web Services.

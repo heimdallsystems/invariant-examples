@@ -1,0 +1,248 @@
+- filename: global-config.yaml
+  items:
+    - pattern: |
+        # AWS IAM Central Root Management
+        centralRootUserManagement:
+          enable: true
+          capabilities:
+            rootCredentialsManagement: true
+            allowRootSessions: true
+      replacement: ""
+    - pattern: |
+        "    # # AWS-GR_NO_UNRESTRICTED_ROUTE_TO_IGW"
+        "    # #   - Detect whether public routes exist in the route table for an Internet Gateway (IGW)"
+        "    - identifier: b8pjfqosgkgknznstduvel4rh"
+        "      enable: true"
+        "      deploymentTargets:"
+        "        organizationalUnits:"
+        "          - Security"
+        "          - Infrastructure"
+        "          - Workloads"
+        "          - Workloads/Sandbox"
+        "          - Workloads/Dev"
+        "          - Workloads/Test"
+        "          - Workloads/Prod"
+      replacement: |
+        "    # # AWS-GR_NO_UNRESTRICTED_ROUTE_TO_IGW"
+        "    # #   - Detect whether public routes exist in the route table for an Internet Gateway (IGW)"
+        "    # - identifier: b8pjfqosgkgknznstduvel4rh"
+        "    #   enable: true"
+        "    #   deploymentTargets:"
+        "    #     organizationalUnits:"
+        "    #       - Security"
+        "    #       - Infrastructure"
+        "    #       - Workloads"
+        "    #       - Workloads/Sandbox"
+        "    #       - Workloads/Dev"
+        "    #       - Workloads/Test"
+        "    #       - Workloads/Prod"
+    - pattern: |
+        # AWS Cost and Usage Reports
+        reports:
+          costAndUsageReport:
+            compression: Parquet # Sets data compression format to Parquet for storage
+            format: Parquet # Defines the output format as Parquet for optimized querying
+            reportName: "{{ AcceleratorPrefix }}-cur" # Name identifier for the Cost and Usage Report
+            s3Prefix: cur # Defines the S3 prefix for the report
+            timeUnit: MONTHLY # Generates reports on a provided interval
+            refreshClosedReports: true # Updates previously generated reports if new charges appear
+            reportVersioning: CREATE_NEW_REPORT # Creates a new report version each time the report is generated
+            lifecycleRules:
+              - enabled: true
+                abortIncompleteMultipartUpload: 7
+                expiration: 365
+                noncurrentVersionExpiration: 365
+          # AWS Budgets Configurations
+          budgets:
+            - deploymentTargets:
+                accounts:
+                  - Management # Deploys budget configuration to Management account
+              name: "{{ AcceleratorPrefix }}-budget" # Name identifier for the budget
+              timeUnit: MONTHLY # Sets budget tracking interval
+              type: COST # Sets budget type to cost
+              amount: 2000 # Sets budget limit to 2000 USD
+              includeUpfront: true # Includes upfront costs in budget calculations
+              includeTax: true # Includes taxes in budget calculations
+              includeSupport: true # Includes AWS support costs in budget
+              includeSubscription: true # Includes subscription costs in budget
+              includeRecurring: true # Includes recurring charges in budget
+              includeOtherSubscription: true # Includes other subscription costs in budget
+              includeDiscount: true # Includes discounts in budget calculations
+              includeCredit: false # Excludes credits from budget calculations
+              includeRefund: false # Excludes refunds from budget calculations
+              useBlended: false # Disables use of blended costs
+              useAmortized: false # Disables use of amortized costs
+              unit: USD # Sets budget currency to US Dollars
+              notifications: # Configures notifications for budget thresholds
+                - type: ACTUAL # Notification based on actual spend
+                  thresholdType: PERCENTAGE # Threshold type defined as percentage
+                  threshold: 100 # Notification at 100% of budget
+                  comparisonOperator: GREATER_THAN # Triggers when spending exceeds threshold
+                  subscriptionType: EMAIL # Delivers notification via email
+                  address: "{{ BudgetsEmail }}" # Email recipient address
+                - type: ACTUAL
+                  thresholdType: PERCENTAGE
+                  threshold: 90 # 90% threshold notification
+                  comparisonOperator: GREATER_THAN
+                  subscriptionType: EMAIL
+                  address: "{{ BudgetsEmail }}"
+                - type: ACTUAL
+                  thresholdType: PERCENTAGE
+                  threshold: 80 # 80% threshold notification
+                  comparisonOperator: GREATER_THAN
+                  subscriptionType: EMAIL
+                  address: "{{ BudgetsEmail }}"
+                - type: ACTUAL
+                  thresholdType: PERCENTAGE
+                  threshold: 75 # 75% threshold notification
+                  comparisonOperator: GREATER_THAN
+                  subscriptionType: EMAIL
+                  address: "{{ BudgetsEmail }}"
+                - type: ACTUAL
+                  thresholdType: PERCENTAGE
+                  threshold: 50 # 50% threshold notification
+                  comparisonOperator: GREATER_THAN
+                  subscriptionType: EMAIL
+                  address: "{{ BudgetsEmail }}"
+      replacement: ""
+- filename: security-config.yaml
+  items:
+    - pattern: |
+        "    enable: true # Enables Macie to all accounts in the organization"
+      replacement: |
+        "    enable: false # Enables Macie to all accounts in the organization"
+    - pattern: |
+        '        - name: "{{ AcceleratorPrefix }}-dynamodb-table-encrypted-kms"'
+        "          complianceResourceTypes:"
+        "            - AWS::DynamoDB::Table"
+        "          identifier: DYNAMODB_TABLE_ENCRYPTED_KMS"
+        "          tags:"
+        "            - key: Accelerator"
+        '              value: "{{ AcceleratorPrefix }}"'
+      replacement: |
+        '        - name: "{{ AcceleratorPrefix }}-dynamodb-table-encrypted-kms"'
+        "          complianceResourceTypes:"
+        "            - AWS::DynamoDB::Table"
+        "          identifier: DYNAMODB_TABLE_ENCRYPTED_KMS"
+        "          tags:"
+        "            - key: Accelerator"
+        '              value: "{{ AcceleratorPrefix }}"'
+        '        - name: "{{ AcceleratorPrefix }}-no-unrestricted-route-to-igw"'
+        "          complianceResourceTypes:"
+        "            - AWS::EC2::RouteTable"
+        "          identifier: NO_UNRESTRICTED_ROUTE_TO_IGW"
+        "          tags:"
+        "            - key: Accelerator"
+        '              value: "{{ AcceleratorPrefix }}"'
+    - pattern: |
+        '        - name: "{{ AcceleratorPrefix }}-sagemaker-notebook-instance-kms-key-configured"'
+        "          identifier: SAGEMAKER_NOTEBOOK_INSTANCE_KMS_KEY_CONFIGURED"
+        "          tags:"
+        "            - key: Accelerator"
+        '              value: "{{ AcceleratorPrefix }}"'
+        '        - name: "{{ AcceleratorPrefix }}-no-unrestricted-route-to-igw"'
+        "          complianceResourceTypes:"
+        "            - AWS::EC2::RouteTable"
+        "          identifier: NO_UNRESTRICTED_ROUTE_TO_IGW"
+        "          tags:"
+        "            - key: Accelerator"
+        '              value: "{{ AcceleratorPrefix }}"'
+      replacement: |
+        '        - name: "{{ AcceleratorPrefix }}-sagemaker-notebook-instance-kms-key-configured"'
+        "          identifier: SAGEMAKER_NOTEBOOK_INSTANCE_KMS_KEY_CONFIGURED"
+        "          tags:"
+        "            - key: Accelerator"
+        '              value: "{{ AcceleratorPrefix }}"'
+    - pattern: |
+        '        - name: "{{ AcceleratorPrefix }}-codebuild-project-artifact-encryption"'
+        "          complianceResourceTypes:"
+        "            - AWS::CodeBuild::Project"
+        "          identifier: CODEBUILD_PROJECT_ARTIFACT_ENCRYPTION"
+        "          tags:"
+        "            - key: Accelerator"
+        '              value: "{{ AcceleratorPrefix }}"'
+      replacement: |
+        '        # - name: "{{ AcceleratorPrefix }}-codebuild-project-artifact-encryption"'
+        "        #   complianceResourceTypes:"
+        "        #     - AWS::CodeBuild::Project"
+        "        #   identifier: CODEBUILD_PROJECT_ARTIFACT_ENCRYPTION"
+        "        #   tags:"
+        "        #     - key: Accelerator"
+        '        #       value: "{{ AcceleratorPrefix }}"'
+- filename: network-config.yaml
+  items:
+    - pattern: |
+        "        - service: ssm-incidents"
+      replacement: |
+        "        # - service: ssm-incidents"
+- filename: replacements-config.yaml
+  items:
+    - pattern: |
+        "  # AWS Budgets Notification Emails"
+        "  - key: BudgetsEmail"
+        "    type: String"
+        "    value: <budget-notifications>@example.com  <----- UPDATE EMAIL ADDRESS"
+        ""
+      replacement: ""
+    - pattern: |
+        globalReplacements:
+          # Accelerator Prefix
+          - key: AcceleratorPrefix
+            type: String
+            value: AWSAccelerator
+          # Home Region
+          - key: HomeRegion
+            type: String
+            value: us-east-1 # <----- UPDATE TO YOUR HOME REGION
+          - key: EnabledRegions
+            type: StringList
+            value:
+              - "us-east-1" # <----- UPDATE TO INCLUDE HOME REGION + ADDITIONAL REGIONS TO ENABLE
+              # - "us-west-2" # <----- ADD ADDITIONAL REGIONS AS NEEDED
+      replacement: |
+        globalReplacements:
+          # Accelerator Prefix
+          - key: AcceleratorPrefix
+            type: String
+            value: AWSAccelerator
+          # Home Region
+          - key: HomeRegion
+            type: String
+            value: us-gov-west-1 # <----- UPDATE TO YOUR HOME REGION
+          - key: EnabledRegions
+            type: StringList
+            value:
+              - "us-gov-west-1" # <----- UPDATE TO INCLUDE HOME REGION + ADDITIONAL REGIONS TO ENABLE
+              # - "us-gov-east-1" # <----- ADD ADDITIONAL REGIONS AS NEEDED
+- filename: accounts-config.yaml
+  items:
+    - pattern: |
+        "  - name: Perimeter"
+        "    description: The Perimeter account"
+        "    email: <perimeter>@example.com  <----- UPDATE EMAIL ADDRESS"
+        "    organizationalUnit: Infrastructure"
+      replacement: |
+        "  - name: Perimeter"
+        "    description: The Perimeter account"
+        "    email: <perimeter>@example.com  <----- UPDATE EMAIL ADDRESS"
+        "    organizationalUnit: Infrastructure"
+        "# This section enables LZA to invite the accounts into the Organization"
+        "accountIds:"
+        "  - email: <landing-zone-management-email@example.com> # <----- UPDATE EMAIL ADDRESS"
+        '    accountId: "000000000000" # <----- UPDATE GOVCLOUD ACCOUNT ID from Commercial GovCloud mapping table'
+        "  - email: <govCloud-log-archive-email@example.com> # <----- UPDATE EMAIL ADDRESS"
+        '    accountId: "111111111111" # <----- UPDATE GOVCLOUD ACCOUNT ID from Commercial GovCloud mapping table'
+        "  - email: <govCloud-audit-email@example.com> # <----- UPDATE EMAIL ADDRESS"
+        '    accountId: "222222222222" # <----- UPDATE GOVCLOUD ACCOUNT ID from Commercial GovCloud mapping table'
+        "  - email: <govCloud-shared-services-email@example.com> # <----- UPDATE EMAIL ADDRESS"
+        '    accountId: "333333333333" # <----- UPDATE GOVCLOUD ACCOUNT ID from Commercial GovCloud mapping table'
+        "  - email: <govCloud-network-email@example.com> # <----- UPDATE EMAIL ADDRESS"
+        '    accountId: "444444444444" # <----- UPDATE GOVCLOUD ACCOUNT ID from Commercial GovCloud mapping table'
+        "  - email: <govCloud-perimeter-email@example.com> # <----- UPDATE EMAIL ADDRESS"
+        '    accountId: "555555555555" # <----- UPDATE GOVCLOUD ACCOUNT ID from Commercial GovCloud mapping table'
+
+- postActions:
+    - type: removeFile
+      files:
+        - service-control-policies/lza-deployment-guardrails-1.json
+        - service-control-policies/lza-deployment-guardrails-2.json

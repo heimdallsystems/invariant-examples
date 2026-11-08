@@ -1,0 +1,144 @@
+# Invariant on the LZA Universal Configuration.
+#
+# Adapted from the template in heimdallsystems/invariant
+# (.github/workflows/invariant.yml) for a config that already has findings:
+#
+#   guardrail-baseline    Scans every policy against the LZA guardrails bundled
+#                         with Invariant. Reports to code scanning and does not
+#                         fail the job, so existing findings stay visible as
+#                         alerts. A pull request that adds a new error-level
+#                         alert fails GitHub's "Code scanning results" check.
+#   guardrail-regression  Proves each changed policy still denies (SCP/RCP) or
+#                         grants no more than (IAM) its reviewed copy in
+#                         reference/. Fails the job on any failed check.
+
+name: Invariant guardrail checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+env:
+  # Pinned so the recorded runs are reproducible.
+  INVARIANT_PIP_SPEC: invariant-sast==0.3.5
+  POLICY_ROOT: lza-universal-configuration/modules/base/default
+  SOLVER_TIMEOUT_SECONDS: "120"   # limits each whole invariant command
+  FORCE_COLOR: "1"
+
+jobs:
+  guardrail-baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Bootstrap verified pip and certificate constraints
+        shell: bash
+        run: |
+          python -m pip --isolated --disable-pip-version-check install --no-deps "pip @ https://files.pythonhosted.org/packages/3f/06/3e4420302363fbb71be3c7f35ce042f54bfca330e3e66b3a2e3c4cca579f/pip-26.2.2-py3-none-any.whl#sha256=fd7f4dfa8190e014013b9f08f3e973f4e4c26ffd179a204895533a7254813a70"
+          printf 'pip==26.2.2\ncertifi>=2026.10.19\nsigstore>=4.5.1\n' > "$RUNNER_TEMP/security-constraints.txt"
+          echo "PIP_CONSTRAINT=$RUNNER_TEMP/security-constraints.txt" >> "$GITHUB_ENV"
+          python -m pip install 'certifi>=2026.10.19'
+
+      - name: Install invariant
+        run: python -m pip install --quiet "$INVARIANT_PIP_SPEC"
+
+      - name: Scan against the bundled LZA guardrails
+        run: |
+          timeout "$SOLVER_TIMEOUT_SECONDS" invariant scan \
+            --directory "$POLICY_ROOT" \
+            --output cli --output sarif --output json \
+            --out-dir solver-results-baseline \
+            --soft-fail
+
+      - name: Upload SARIF to code scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: solver-results-baseline/results.sarif
+          category: invariant-baseline
+
+      - name: Upload results artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: invariant-baseline-results
+          path: solver-results-baseline/
+          retention-days: 30
+
+  guardrail-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # build_manifest diffs base...HEAD, which needs history
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Bootstrap verified pip and certificate constraints
+        shell: bash
+        run: |
+          python -m pip --isolated --disable-pip-version-check install --no-deps "pip @ https://files.pythonhosted.org/packages/3f/06/3e4420302363fbb71be3c7f35ce042f54bfca330e3e66b3a2e3c4cca579f/pip-26.2.2-py3-none-any.whl#sha256=fd7f4dfa8190e014013b9f08f3e973f4e4c26ffd179a204895533a7254813a70"
+          printf 'pip==26.2.2\ncertifi>=2026.10.19\nsigstore>=4.5.1\n' > "$RUNNER_TEMP/security-constraints.txt"
+          echo "PIP_CONSTRAINT=$RUNNER_TEMP/security-constraints.txt" >> "$GITHUB_ENV"
+          python -m pip install 'certifi>=2026.10.19'
+
+      - name: Install invariant
+        run: python -m pip install --quiet "$INVARIANT_PIP_SPEC"
+
+      - name: Build manifest.json from the diff
+        id: manifest
+        run: |
+          if [ -n "${GITHUB_BASE_REF:-}" ]; then
+            DIFF_BASE="origin/$GITHUB_BASE_REF"
+          else
+            DIFF_BASE="${{ github.event.before }}"
+          fi
+          # A branch's first push has no previous commit to diff against.
+          if [ -z "$DIFF_BASE" ] || ! git rev-parse --verify --quiet "$DIFF_BASE^{commit}" > /dev/null; then
+            echo "No base commit to compare with ($DIFF_BASE); nothing to regress against."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          python -m invariant.build_manifest \
+            --diff-base "$DIFF_BASE" \
+            --reference-dir reference \
+            --candidate-dirs "$POLICY_ROOT/service-control-policies" "$POLICY_ROOT/rcp-policies" "$POLICY_ROOT/iam-policies" \
+            --out manifest.json
+
+      - name: Prove changed policies against reference/
+        if: steps.manifest.outputs.skip != 'true'
+        run: |
+          timeout "$SOLVER_TIMEOUT_SECONDS" invariant regression \
+            --manifest manifest.json \
+            --output cli --output sarif --output json \
+            --out-dir solver-results
+
+      - name: Upload SARIF to code scanning
+        if: always() && steps.manifest.outputs.skip != 'true' && hashFiles('solver-results/results.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: solver-results/results.sarif
+          category: invariant-regression
+
+      - name: Upload results artifact
+        if: always() && steps.manifest.outputs.skip != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: invariant-regression-results
+          path: solver-results/
+          retention-days: 30
+          if-no-files-found: ignore

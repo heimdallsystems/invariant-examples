@@ -1,0 +1,369 @@
+[#security-hub-findings]
+= Security Hub Findings
+
+== Introduction
+
+The https://aws.amazon.com/solutions/implementations/landing-zone-accelerator-on-aws/[Landing Zone Accelerator on AWS] (LZA) solution includes a feature to enable AWS Security Hub, which provides a comprehensive view of the security state and helps you assess your environment against security standards and best practices. When deploying LZA, it is essential to review and address the Security Hub findings to ensure a secure environment based on your requirements. The following table provides guidance on AWS Security Hub findings that you may encounter during the deployment of initial LZA, and LZA Universal Configuration built upon it.
+
+[NOTE]
+====
+You should regularly review and monitor new findings in AWS Security Hub, as your environment and workloads evolve over time. This guidance applies to the resources created and managed by the Landing Zone Accelerator on AWS solution. For other findings in your environment, it is recommended to follow the https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-controls-reference.html[Security Hub controls reference].
+====
+
+== Security Hub Findings Reference
+
+[NOTE]
+====
+The following Security Hub controls are automatically suppressed by the LZA Universal Configuration for LZA-managed resources: CloudWatch.15, DynamoDB.4, DynamoDB.6, EC2.10, EC2.23, EC2.56, EC2.57, EC2.58, EC2.60, EC2.172, Kinesis.3, KMS.1, KMS.2, Lambda.3, Lambda.7, S3.6, S3.7, S3.9, S3.11, S3.15, S3.17, and S3.20. These suppressions are configured through Security Hub automation rules in the `security-config.yaml` file. Suppressed findings are marked with *_Automatically Suppressed_* in the table below.
+====
+
+[cols="1,3,1,5", options="header"]
+|===
+|ID
+|Title
+|Severity
+|Guidance
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/cloudwatch-controls.html#cloudwatch-15[CloudWatch.15]
+|CloudWatch Alarms should have an action configured for the alarm state
+|High
+|*_Automatically Suppressed_* - When using the Landing Zone Accelerator on AWS solution, this finding includes the CloudWatch alarm with prefix `{ACCELERATOR_PREFIX}FailedAlarm*`.
+
+This CloudWatch alarm is created to alarm on pipeline processing failures for the `{ACCELERATOR_PREFIX}-PipelineStack`. You should configure this alarm with an appropriate SNS topic to notify the appropriate staff on pipeline failure messages.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-23[EC2.23]
+|Amazon EC2 Transit Gateways should not automatically accept VPC attachment requests
+|High
+|*_Automatically Suppressed_* - When using the Landing Zone Accelerator on AWS solution, this finding includes the following AWS Transit Gateway named `{{ AcceleratorPrefix }}-{{ HomeRegion }}-tgw`.
+
+The LZA uses `autoAcceptSharingAttachments: enable` features to share out transit gateway (via Resource Access Manager) with only accounts shared through `shareTargets` property in the AWS Organization. You can disregard this finding as the automatic acceptance of VPC attachment requests is only allowed for accounts present in the AWS Organization and defined in the `shareTargets` property of transit gateway. Alternatively, you can choose to suppress the finding for these resources.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/guardduty-controls.html#guardduty-6[GuardDuty.6]
+|GuardDuty Lambda Protection should be enabled
+|High
+|This finding is generated for any account when GuardDuty Lambda Protection is not enabled. This rule checks if Lambda Protection is enabled for accounts.
+
+When using the Landing Zone Accelerator on AWS solution, LZA configures the Audit account as the delegated administrator for GuardDuty, but does not enable Lambda Protection by default due to its additional cost implications. See the https://docs.aws.amazon.com/guardduty/latest/ug/lambda-protection.html[GuardDuty Lambda Protection] documentation for more details on this feature and its pricing.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/guardduty-controls.html#guardduty-8[GuardDuty.8]
+|GuardDuty Malware Protection for EC2 should be enabled
+|High
+|This finding is generated for any account when GuardDuty Malware Protection for EC2 is not enabled. This rule checks if Malware Protection for EC2 is enabled for accounts.
+
+When using the Landing Zone Accelerator on AWS solution, LZA configures the Audit account as the delegated administrator for GuardDuty, but does not enable Malware Protection for EC2 by default due to its additional cost implications. See the https://docs.aws.amazon.com/guardduty/latest/ug/malware-protection.html[GuardDuty Malware Protection] documentation for more details on this feature and its pricing.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/guardduty-controls.html#guardduty-9[GuardDuty.9]
+|GuardDuty RDS Protection should be enabled
+|High
+|This finding is generated for any account when GuardDuty RDS Protection is not enabled. This rule checks if RDS Protection is enabled for accounts.
+
+When using the Landing Zone Accelerator on AWS solution, LZA configures the Audit account as the delegated administrator for GuardDuty, but does not enable RDS Protection by default. See the https://docs.aws.amazon.com/guardduty/latest/ug/rds-protection.html[GuardDuty RDS Protection] documentation for more details on this feature.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/guardduty-controls.html#guardduty-11[GuardDuty.11]
+|GuardDuty Runtime Monitoring should be enabled
+|High
+|This finding is generated for any account when GuardDuty Runtime Monitoring is not enabled. For a standalone account, the control fails if GuardDuty Runtime Monitoring is disabled for the account. In a multi-account environment, the control fails if GuardDuty Runtime Monitoring is disabled for the delegated GuardDuty administrator account and all member accounts.
+
+When using the Landing Zone Accelerator on AWS solution, LZA configures the Audit account as the delegated administrator for GuardDuty. See the https://docs.aws.amazon.com/guardduty/latest/ug/runtime-monitoring-configuration.html[Enabling GuardDuty Runtime Monitoring] documentation for more details.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/inspector-controls.html#inspector-1[Inspector.1]
+|Amazon Inspector EC2 scanning should be enabled
+|High
+|This finding is generated for any account when Amazon Inspector EC2 scanning is not enabled in the account. To address this finding, you can enable EC2 scanning to enhance your security posture by identifying vulnerabilities in your EC2 instances. For detailed instructions on setting up and configuring Amazon Inspector for EC2 scanning, see the https://docs.aws.amazon.com/inspector/latest/user/scanning-ec2.html[Amazon Inspector EC2 scanning] documentation.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/inspector-controls.html#inspector-2[Inspector.2]
+|Amazon Inspector ECR scanning should be enabled
+|High
+|This finding is generated for any account when Amazon Inspector ECR scanning is not enabled in the account. To address this finding, you can enable ECR scanning to automatically scan container images for software vulnerabilities and exposures. For detailed instructions on setting up and configuring Amazon Inspector for ECR scanning, see the https://docs.aws.amazon.com/inspector/latest/user/scanning-ecr.html[Amazon Inspector ECR scanning] documentation.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/inspector-controls.html#inspector-3[Inspector.3]
+|Amazon Inspector Lambda code scanning should be enabled
+|High
+|This finding is generated for any account when Amazon Inspector Lambda code scanning is not enabled in the account. To address this finding, you can enable Lambda code scanning to identify vulnerabilities in your Lambda function code. For detailed instructions on setting up and configuring Amazon Inspector for Lambda code scanning, see the https://docs.aws.amazon.com/inspector/latest/user/scanning-lambda.html#lambda-code-scans[Amazon Inspector Lambda code scanning] documentation.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/inspector-controls.html#inspector-4[Inspector.4]
+|Amazon Inspector Lambda standard scanning should be enabled
+|High
+|This finding is generated for any account when Amazon Inspector Lambda standard scanning is not enabled in the account. To address this finding, you can enable Lambda standard scanning to identify package vulnerabilities in your Lambda functions' deployment packages. For detailed instructions on setting up and configuring Amazon Inspector for Lambda standard scanning, see the https://docs.aws.amazon.com/inspector/latest/user/scanning-lambda.html#lambda-standard-scans[Amazon Inspector Lambda standard scanning] documentation.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html#s3-6[S3.6]
+|S3 general purpose bucket policies should restrict access to other AWS accounts
+|High
+a|*_Automatically Suppressed_* - When using the Landing Zone Accelerator on AWS solution, this finding includes the following Amazon S3 buckets with prefixes `{ACCELERATOR_PREFIX}` and `{cdk-accel}`:
+
+* `{ACCELERATOR_PREFIX}-central-logs-{ACCOUNT_ID}-{REGION}`
+* `{cdk-accel}-assets-{ACCOUNT_ID}-{REGION}`
+
+You can disregard this finding, as these buckets are created and managed by the LZA and AWS Cloud Development Kit (CDK). `{ACCELERATOR_PREFIX}` bucket stores solution artifacts and environment logs, while `{cdk-accel}` bucket stores files during the bootstrapping process with AWS CDK. These buckets contain resource policies with conditions that restrict their usage to only accounts in the organization with access to limited roles including `{ACCELERATOR_PREFIX}`, `{managementAccountAccessRole}` and `{cdk-accel}`. Additionally, the usage of these roles is protected by service control policies in the member accounts. Alternatively, you can choose to suppress the finding for these resources.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/account-controls.html#account-1[Account.1]
+|Security contact information should be provided for an AWS account
+|Medium
+|This finding is generated when security contact information for an AWS account is not provided.
+
+To add an alternate contact as a security contact to your AWS account, see https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/manage-account-payment.html#manage-account-payment-alternate-contacts[Adding, changing, or removing alternate contacts] in the _AWS Billing and Cost Management User Guide_.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/dynamodb-controls.html#dynamodb-4[DynamoDB.4]
+|DynamoDB tables should be present in a backup plan
+|Medium
+a|*_Automatically Suppressed_* - When using the Landing Zone Accelerator on AWS solution, this finding includes the following Amazon DynamoDB tables with prefix `{ACCELERATOR_PREFIX}`:
+
+* `{ACCELERATOR_PREFIX}-PrepareStack-{ACCOUNT_ID}-{REGION}AcceleratorConfigTableXXXXX`
+* `{ACCELERATOR_PREFIX}-PrepareStack-{ACCOUNT_ID}-{REGION}NewCTAccountsXXXX`
+* `{ACCELERATOR_PREFIX}-PrepareStack-{ACCOUNT_ID}-{REGION}-NewOrgAccountsXXXX`
+
+You can disregard this finding, as these DynamoDB tables are managed by LZA to store environment-specific information. All these tables have point-in-time recovery enabled which automates backups, and may be needed for troubleshooting in rare cases. Deleting them will not impact LZA, as they will be repopulated during the next pipeline execution. Alternatively, you can choose to suppress the finding for these resources.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/dynamodb-controls.html#dynamodb-6[DynamoDB.6]
+|DynamoDB tables should have deletion protection enabled
+|Medium
+a|*_Automatically Suppressed_* - When using the Landing Zone Accelerator on AWS solution, this finding includes the following Amazon DynamoDB tables with prefix `{ACCELERATOR_PREFIX}`:
+
+* `{ACCELERATOR_PREFIX}-PrepareStack-{ACCOUNT_ID}-{REGION}AcceleratorConfigTableXXXXX`
+* `{ACCELERATOR_PREFIX}-PrepareStack-{ACCOUNT_ID}-{REGION}NewCTAccountsXXXX`
+* `{ACCELERATOR_PREFIX}-PrepareStack-{ACCOUNT_ID}-{REGION}-NewOrgAccountsXXXX`
+
+You can disregard this finding, as these DynamoDB tables are managed by LZA to store environment-specific information. Deleting them will not impact LZA, as they will be repopulated during the next pipeline execution. Alternatively, you can choose to suppress the finding for these resources.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-10[EC2.10]
+|Amazon EC2 should be configured to use VPC endpoints that are created for the Amazon EC2 service
+|Medium
+a|*_Automatically Suppressed_* - When using the Landing Zone Accelerator on AWS solution, this finding includes the following Amazon VPCs:
+
+* `{ACCELERATOR_PREFIX}-{HOMEREGION}-endpoints`
+* `{ACCELERATOR_PREFIX}-{HOMEREGION}-inspection`
+* `{ACCELERATOR_PREFIX}-{HOMEREGION}-sharedservices`
+* `{ACCELERATOR_PREFIX}-{HOMEREGION}-ingress`
+* `{ACCELERATOR_PREFIX}-{HOMEREGION}-egress`
+
+You can disregard this finding, as these VPCs are configured to utilize centralized endpoints. AWS Security Hub does not conduct cross-account checks for VPCs that are shared across accounts. Alternatively, you can choose to suppress the finding for these resources.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-56[EC2.56]
+|VPCs should be configured with an interface endpoint for Amazon ECR DKR
+|Medium
+|*_Automatically Suppressed_* - When using the Landing Zone Accelerator on AWS solution, this finding includes VPCs that do not have a direct interface endpoint for Amazon ECR DKR. This rule checks for the presence of the endpoint com.amazonaws.`{REGION}`.ecr.dkr.
+
+The `{ACCELERATOR_PREFIX}-{REGION}-endpoints` VPC in the Network account already have ECR DKR endpoints configured and the VPCs identified by this SecurityHub finding are configured to utilize these endpoints with the https://awslabs.github.io/landing-zone-accelerator-on-aws/latest/typedocs/interfaces/packages__aws-accelerator_config_lib_models_network-config.IVpcConfig.html#useCentralEndpoints[useCentralEndpoints: true] setting. For more information about ECR endpoints, see https://docs.aws.amazon.com/AmazonECR/latest/userguide/vpc-endpoints.html#ecr-setting-up-vpc-create[Amazon ECR interface VPC endpoints].
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-57[EC2.57]
+|VPCs should be configured with an interface endpoint for Systems Manager
+|Medium
+a|*_Automatically Suppressed_* - When using the Landing Zone Accelerator on AWS solution, this finding includes VPCs that do not have a direct interface endpoint for Systems Manager. This rule checks for the presence of the following endpoints:
+
+* ssm.`{REGION}`.amazonaws.com
+* ssmmessages.`{REGION}`.amazonaws.com
+* ec2messages.`{REGION}`.amazonaws.com
+
+The `{ACCELERATOR_PREFIX}-{REGION}-endpoints` VPC in the Network account already have SSM endpoints configured and the VPCs identified by this SecurityHub finding are configured to utilize these endpoints with the https://awslabs.github.io/landing-zone-accelerator-on-aws/latest/typedocs/interfaces/packages__aws-accelerator_config_lib_models_network-config.IVpcConfig.html#useCentralEndpoints[useCentralEndpoints: true] setting. Please see the https://docs.aws.amazon.com/systems-manager/latest/userguide/setup-create-vpc.html[AWS documentation] for more details.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-58[EC2.58]
+|VPCs should be configured with an interface endpoint for SSM Incidents
+|Medium
+|*_Automatically Suppressed_* - When using the Landing Zone Accelerator on AWS solution, this finding includes VPCs that do not have a direct interface endpoint for SSM Incidents. This rule checks for the presence of the endpoint ssm-incidents.`{REGION}`.amazonaws.com.
+
+The `{ACCELERATOR_PREFIX}-{REGION}-endpoints` VPC in the Network account already have SSM Incidents endpoints configured and the VPCs identified by this SecurityHub finding are configured to utilize these endpoints with the https://awslabs.github.io/landing-zone-accelerator-on-aws/latest/typedocs/interfaces/packages__aws-accelerator_config_lib_models_network-config.IVpcConfig.html#useCentralEndpoints[useCentralEndpoints: true] setting. For more information about SSM Incidents endpoints, see https://docs.aws.amazon.com/incident-manager/latest/userguide/vpc-interface-endpoints.html#vpc-endpoint-create[AWS Systems Manager Incident Manager interface VPC endpoints].
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-60[EC2.60]
+|VPCs should be configured with an interface endpoint for SSM Contacts
+|Medium
+|*_Automatically Suppressed_* - When using the Landing Zone Accelerator on AWS solution, this finding includes VPCs that do not have a direct interface endpoint for SSM Contacts. This rule checks for the presence of the endpoint ssm-contacts.`{REGION}`.amazonaws.com.
+
+The `{ACCELERATOR_PREFIX}-{REGION}-endpoints` VPC in the Network account already have SSM Contacts endpoints configured and the VPCs identified by this SecurityHub finding are configured to utilize these endpoints with the https://awslabs.github.io/landing-zone-accelerator-on-aws/latest/typedocs/interfaces/packages__aws-accelerator_config_lib_models_network-config.IVpcConfig.html#useCentralEndpoints[useCentralEndpoints: true] setting. For more information about SSM Contacts endpoints, see https://docs.aws.amazon.com/incident-manager/latest/userguide/vpc-interface-endpoints.html#vpc-endpoint-create[AWS Systems Manager Incident Manager interface VPC endpoints].
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-172[EC2.172]
+|EC2 VPC Block Public Access settings should block internet gateway traffic
+|Medium
+a|*_Automatically Suppressed_* - When using the Landing Zone Accelerator on AWS solution, this finding is addressed through the declarative policy `{ACCELERATOR_PREFIX}-Vpc-Block-Public-Access-Guardrail` defined in the `organization-config.yaml` file. This policy is designed to prevent unintended exposure to the internet by blocking the attachment of internet gateways to VPCs across your organization.
+
+By default, this policy targets all accounts except for:
+
+* The Perimeter account, which is specifically designed to handle bidirectional internet traffic.
+* Accounts in the Sandbox OU, which are intentionally configured with less restrictive controls to facilitate experimentation and testing in isolated environments
+
+This implementation follows the principle of least privilege by restricting internet access to only those accounts that specifically require it for their intended function.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/guardduty-controls.html#guardduty-7[GuardDuty.7]
+|GuardDuty EKS Runtime Monitoring should be enabled
+|Medium
+|This finding is generated when EKS Runtime Monitoring is not enabled in Amazon GuardDuty. This rule checks if EKS Runtime Monitoring is enabled at the account level. You can enable this in the Audit account which is the delegated admin account for GuardDuty in LZA. See the https://docs.aws.amazon.com/guardduty/latest/ug/runtime-monitoring-configuration.html[AWS documentation] for more details.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/guardduty-controls.html#guardduty-12[GuardDuty.12]
+|GuardDuty ECS Runtime Monitoring should be enabled
+|Medium
+|This finding is generated when ECS Runtime Monitoring is not enabled in Amazon GuardDuty. This rule checks if ECS Runtime Monitoring is enabled at the account level. You can enable this in the Audit account which is the delegated admin account for GuardDuty in LZA. See the https://docs.aws.amazon.com/guardduty/latest/ug/how-runtime-monitoring-works-ecs-fargate.html[AWS documentation] for more details.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/guardduty-controls.html#guardduty-13[GuardDuty.13]
+|GuardDuty EC2 Runtime Monitoring should be enabled
+|Medium
+|This finding is generated when EC2 Runtime Monitoring is not enabled in Amazon GuardDuty. This rule checks if EC2 Runtime Monitoring is enabled at the account level. You can enable this in the Audit account which is the delegated admin account for GuardDuty in LZA. See the https://docs.aws.amazon.com/guardduty/latest/ug/how-runtime-monitoring-works-ec2.html[AWS documentation] for more details.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/kinesis-controls.html#kinesis-3[Kinesis.3]
+|Kinesis streams should have an adequate data retention period
+|Medium
+a|*_Automatically Suppressed_* - This finding is generated when centralized logging is enabled by the Landing Zone Accelerator and the field `globalConfig.logging.cloudwatchLogs.kinesis.retention` is not explicitly set. The default value set by the LZA is 24 hours while the default SecurityHub value to check for is 168 hours (7 days).
+
+To set the Kinesis data stream data retention period higher using the accelerator, you can set the following configuration options in `global-config.yaml`:
+
+[source,yaml]
+----
+cloudwatchLogs:
+  kinesis
+    retention: 168
+----
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/kms-controls.html#kms-1[KMS.1]
+|IAM customer managed policies should not allow decryption actions on all KMS keys
+|Medium
+a|*_Automatically Suppressed_* - When using the Landing Zone Accelerator on AWS solution, this finding includes the following AWS IAM customer managed policies with prefix `{ACCELERATOR_PREFIX}`:
+
+* `{ACCELERATOR_PREFIX}-OperationsStack-{ACCOUNT_ID}-{REGION}-SsmSessionManagerSettingsSessionManagerPolicyXXXX`
+* `{ACCELERATOR_PREFIX}-SessionManagerLogging`
+
+You can disregard this finding, as these IAM policies are managed by LZA to enable decryption operations on KMS keys. These policies have conditions that restrict their usage to the LZA generated alias of KMS keys, ensuring that the decryption actions are performed only within the specific account and region. Additionally, the usage of these policies is restricted to solution created resources and protected by service control policies in the member accounts. Alternatively, you can choose to suppress the finding for these resources.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/kms-controls.html#kms-2[KMS.2]
+|IAM principals should not have IAM inline policies that allow decryption actions on all KMS keys
+|Medium
+a|*_Automatically Suppressed_* - When using the Landing Zone Accelerator on AWS solution, this finding includes the following AWS IAM principals with prefix `{ACCELERATOR_PREFIX}`:
+
+* `{ACCELERATOR_PREFIX}-InstallerS-UpdatePipelineLambdaRoleXXXX` (UpdatePipelineLambdaPolicy284ABC36)
+* `{ACCELERATOR_PREFIX}-SecurityAu-CustomMacieCreateMemberCuXXXX`
+
+You can disregard this finding, as these roles with inline policies are managed by LZA to enable decryption operations on KMS keys. These policies are used by Lambda functions created by the solution and perform decryption actions only within the specific account and region adhering to the principle of least privilege. Alternatively, you can choose to suppress the finding for these resources.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/networkfirewall-controls.html#networkfirewall-9[NetworkFirewall.9]
+|Network Firewall firewalls should have deletion protection enabled
+|Medium
+|These new capabilities are not enabled by default on the firewall `{ACCELERATOR_PREFIX}-{REGION}-nfw` deployed in the Network Account. You can enable these capabilities with the AWS CLI: https://docs.aws.amazon.com/cli/latest/reference/network-firewall/update-firewall-delete-protection.html
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/networkfirewall-controls.html#networkfirewall-10[NetworkFirewall.10]
+|Network Firewall firewalls should have subnet change protection enabled
+|Medium
+|These new capabilities are not enabled by default on the firewall `{ACCELERATOR_PREFIX}-{REGION}-nfw` deployed in the Network Account. You can enable these capabilities with the AWS CLI: https://docs.aws.amazon.com/cli/v1/reference/network-firewall/update-subnet-change-protection.html
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html#s3-9[S3.9]
+|S3 general purpose buckets should have server access logging enabled
+|Medium
+a|*_Automatically Suppressed_* - When using the Landing Zone Accelerator on AWS solution, this finding includes the following Amazon S3 buckets with prefixes `{ACCELERATOR_PREFIX}` and `{cdk-accel}`:
+
+* `{ACCELERATOR_PREFIX}-s3-access-logs-{ACCOUNT_ID}-{REGION}`
+* `{ACCELERATOR_PREFIX}-s3-logs-{ACCOUNT_ID}-{REGION}`
+* `{ACCELERATOR_PREFIX}-elb-access-logs-{ACCOUNT_ID}-{REGION}`
+* `{cdk-accel}-assets-{ACCOUNT_ID}-{REGION}`
+
+You can disregard this finding for s3-access-logs, s3-logs and elb-access-logs buckets with prefix `{ACCELERATOR_PREFIX}` as these are target logging buckets and do not require server access logging enabled.
+
+For the buckets related to `{cdk-accel}`, this bucket is automatically created for storing files during the https://docs.aws.amazon.com/cdk/v2/guide/bootstrapping.html#bootstrapping-template[bootstrapping] process with AWS Cloud Development Kit (CDK). You can disregard this finding, as this bucket stores and manages assets, templates, and metadata related to your CDK deployments.
+
+Alternatively, you can choose to suppress the finding for these resources.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html#s3-11[S3.11]
+|S3 general purpose buckets should have event notifications enabled
+|Medium
+|*_Automatically Suppressed_* - When using the Landing Zone Accelerator on AWS solution, this finding includes all Amazon S3 buckets with prefixes `{ACCELERATOR_PREFIX}` and `{cdk-accel}`.
+
+You can disregard this finding, as these buckets are created and managed by the LZA and AWS Cloud Development Kit (CDK) to store solution artifacts and environment logs. These buckets have versioning which keeps multiple variants of an object in the same s3 buckets to preserve, retrieve, and restore earlier versions of an object. Alternatively, you can choose to suppress the finding for these resources.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html#s3-15[S3.15]
+|S3 general purpose buckets should have Object Lock enabled
+|Medium
+|*_Automatically Suppressed_* - When using the Landing Zone Accelerator on AWS solution, this finding includes the Amazon S3 buckets with prefixes `{ACCELERATOR_PREFIX}` and `{cdk-accel}`.
+
+You cannot https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock-configure.html[enable object lock] for destination buckets `{ACCELERATOR_PREFIX}-s3-access-logs-{ACCOUNT-ID}-{REGION}`, `{ACCELERATOR_PREFIX}-s3-logs-{ACCOUNT-ID}-{REGION}`, `{ACCELERATOR_PREFIX}-elb-access-logs-{ACCOUNT-ID}-{REGION}`, used for server access logs.
+
+You can disregard this finding for remaining buckets, as these buckets are created and managed by the LZA and AWS Cloud Development Kit (CDK) to store solution artifacts and environment logs. These buckets have versioning which keeps multiple variants of an object in the same s3 buckets to preserve, retrieve, and restore earlier versions of an object. Alternatively, you can choose to suppress the finding for these resources.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html#s3-17[S3.17]
+|S3 general purpose buckets should be encrypted at rest with AWS KMS keys
+|Medium
+a|*_Automatically Suppressed_* - When using the Landing Zone Accelerator on AWS solution, this finding includes the following Amazon S3 buckets:
+
+* `{ACCELERATOR_PREFIX}-assets-logs-{ACCOUNT_ID}-{REGION}`
+* `{ACCELERATOR_PREFIX}-s3-access-logs-{ACCOUNT_ID}-{REGION}`
+* `{ACCELERATOR_PREFIX}-cur-{ACCOUNT_ID}-{REGION}`
+* `{ACCELERATOR_PREFIX}-s3-logs-{ACCOUNT_ID}-{REGION}`
+
+You can disregard this finding, as these buckets are created and managed by the LZA to store solution artifacts and environment logs, and enabled server side encryption with Amazon S3 managed keys (SSE-S3). Additionally, default server-side encryption with AWS Key Management Service (AWS KMS) keys (SSE-KMS) is not supported for https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-server-access-logging.html[server access logging buckets]. Alternatively, you can choose to suppress the finding for these resources.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html#s3-22[S3.22]
+|S3 general purpose buckets should log object-level write events
+|Medium
+|When using the Landing Zone Accelerator on AWS solution with AWS Control Tower, this finding occurs because the organization-wide CloudTrail doesn't turn on object-level events for S3.
+
+This is intended to prevent unexpected cost overruns related to CloudTrail. You can configure individual trails at the Organization, Organizational Unit, or Account level through the https://awslabs.github.io/landing-zone-accelerator-on-aws/latest/typedocs/interfaces/packages__aws-accelerator_config_lib_models_global-config.IAccountCloudTrailConfig.html[accountTrails] setting in the global-config.yaml.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html#s3-23[S3.23]
+|S3 general purpose buckets should log object-level read events
+|Medium
+|When using the Landing Zone Accelerator on AWS solution with AWS Control Tower, this finding occurs because the organization-wide CloudTrail doesn't turn on object-level events for S3.
+
+This is intended to prevent unexpected cost overruns related to CloudTrail. You can configure individual trails at the Organization, Organizational Unit, or Account level through the https://awslabs.github.io/landing-zone-accelerator-on-aws/latest/typedocs/interfaces/packages__aws-accelerator_config_lib_models_global-config.IAccountCloudTrailConfig.html[accountTrails] setting in the global-config.yaml.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/ssm-controls.html#ssm-6[SSM.6]
+|SSM Automation should have CloudWatch logging enabled
+|Medium
+|This finding is generated when Systems Manager Automation executions are not configured to send logs to CloudWatch Logs. When using the Landing Zone Accelerator on AWS solution, you should ensure that SSM Automation executions have CloudWatch logging enabled to maintain proper audit trails and visibility into automation activities. You can enable CloudWatch logging for SSM Automation by following the AWS documentation on https://docs.aws.amazon.com/systems-manager/latest/userguide/automation-action-logging.html[Automation action logging].
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/stepfunctions-controls.html#stepfunctions-1[StepFunctions.1]
+|Step Functions state machines should have logging turned on
+|Medium
+|When using the Landing Zone Accelerator on AWS solution, this finding includes the `CreateOrganizationAccountsXXXX` AWS Step Function.
+
+You can disregard this finding, as this step function is created and managed by the LZA to execute Lambda functions for account creation. The Lambda function associated with this Step Function has enabled CloudWatch logs for monitoring and logging purposes. Alternatively, you can choose to suppress the finding for these resources.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html#iam-18[IAM.18]
+|Ensure a support role has been created to manage incidents with AWS Support
+|Low
+a|This finding is generated when a support role is not created to manage incidents with AWS Support.
+
+To create the role for AWS Support access, you can add it to the role in the https://awslabs.github.io/landing-zone-accelerator-on-aws/latest/typedocs/interfaces/packages__aws-accelerator_config_lib_models_iam-config.IRoleSetConfig.html[iam-config.yaml] configuration file, as shown in the provided example:
+
+[source,yaml]
+----
+roleSets:
+  - deploymentTargets:
+      organizationalUnits:
+        - Root
+    roles:
+      - name: <ENTER THE ROLE NAME>
+        assumedBy:
+          - type: account
+            principal: <ENTER AWS ACCOUNT ID TO GRANT ACCESS>
+        policies:
+          awsManaged:
+            - AWSSupportAccess
+----
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/lambda-controls.html#lambda-3[Lambda.3]
+|Lambda functions should be in a VPC
+|Low
+|*_Automatically Suppressed_* - When using the Landing Zone Accelerator on AWS solution, this finding includes AWS Lambda functions with the prefix `{ACCELERATOR_PREFIX}`.
+
+You can disregard this finding, as these functions are created and managed by the LZA for infrastructure deployment, and solely used for communicating with AWS services. Alternatively, you can choose to suppress the finding for these resources.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/lambda-controls.html#lambda-7[Lambda.7]
+|Lambda functions should have AWS X-Ray active tracing enabled
+|Low
+|*_Automatically Suppressed_* - This finding is generated when active tracing with AWS X-Ray is disabled for an AWS Lambda function. When using the Landing Zone Accelerator on AWS solution, this finding includes AWS Lambda functions with the prefix `{ACCELERATOR_PREFIX}`.
+
+You can disregard this finding, as active tracing is not enabled by default and is not necessary for the use of the LZA. These Lambda functions are created and managed by the LZA. For more details about AWS X-Ray tracing, see the https://docs.aws.amazon.com/lambda/latest/dg/services-xray.html[AWS Lambda X-Ray tracing] documentation. Alternatively, you can choose to suppress the finding for these resources.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html#s3-7[S3.7]
+|S3 general purpose buckets should use cross-Region replication
+|Low
+|*_Automatically Suppressed_* - When using the Landing Zone Accelerator on AWS solution, this finding includes Amazon S3 buckets with prefixes `{ACCELERATOR_PREFIX}` and `{cdk-accel}`.
+
+You can disregard this finding, as `{ACCELERATOR_PREFIX}` buckets are created and managed by the LZA to store solution artifacts and environment logs. These buckets have versioning which keeps multiple variants of an object in the same S3 buckets to preserve, retrieve, and restore earlier versions of an object.
+
+For the bucket related to `{cdk-accel}`, this bucket is automatically created for storing files during the https://docs.aws.amazon.com/cdk/v2/guide/bootstrapping.html#bootstrapping-template[bootstrapping] process with AWS Cloud Development Kit (CDK). You can disregard this finding, as this bucket stores and manages assets, templates, and metadata related to your CDK deployments.
+
+Alternatively, you can choose to suppress this finding for these resources.
+
+|https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html#s3-20[S3.20]
+|S3 general purpose buckets should have MFA delete enabled
+|Low
+|*_Automatically Suppressed_* - When using the Landing Zone Accelerator on AWS solution, this finding includes all Amazon S3 buckets with prefixes `{ACCELERATOR_PREFIX}` and `{cdk-accel}`.
+
+You can disregard this finding, as these buckets are created and managed by the LZA and AWS Cloud Development Kit (CDK) to store solution artifacts and environment logs. These buckets have Lifecycle configurations set up, and you cannot use https://docs.aws.amazon.com/AmazonS3/latest/userguide/MultiFactorAuthenticationDelete.html[MFA delete] for buckets with lifecycle configurations. Alternatively, you can choose to suppress the finding for these resources.
+
+|===
